@@ -151,7 +151,6 @@ def parse_dataset(dataset):
     y = data_array[:, 1].astype('int32')
     return x, y
 
-
 def run_attestation_service(server, tee_node_addr, worker_id, port):
     servicer = HeteroAttestationTransmit(tee_node_addr)
     hetero_attestation_pb2_grpc.add_TransmitServiceServicer_to_server(
@@ -165,7 +164,6 @@ def run_attestation_service(server, tee_node_addr, worker_id, port):
     server.wait_for_termination()
 
     logging.info("Attestation service exits.")
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
