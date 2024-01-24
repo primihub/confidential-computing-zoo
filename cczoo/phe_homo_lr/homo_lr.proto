@@ -54,3 +54,19 @@ message ValidateReply {
 message Empty {
 
 }
+
+message TransferRequest {
+  bytes msg = 1;
+  string key = 2;
+}
+
+message TransferResponse {
+  bool is_ok = 1;
+  string errmsg = 2;
+}
+
+service TransferService {
+  rpc Init(TransferRequest) returns (TransferResponse) {}
+  rpc Send(TransferRequest) returns (TransferResponse) {}
+  rpc Fini(TransferRequest) returns (TransferResponse) {}
+}
