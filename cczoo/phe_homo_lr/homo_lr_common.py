@@ -1,9 +1,15 @@
-import grpc 
+import grpc
 from homo_lr_pb2 import TransferRequest
 from homo_lr_pb2 import TransferResponse
 import homo_lr_pb2_grpc
-import Queue
+from homo_lr_pb2_grpc import TransferServiceStub
+from threading import Thread
 import logging
+import time
+from concurrent import futures
+
+import sys
+import queue
 
 logging.basicConfig(level=logging.DEBUG,
                     format="[%(asctime)s][%(name)s][%(levelname)s] %(message)s",
@@ -12,7 +18,7 @@ logging.basicConfig(level=logging.DEBUG,
 class NamedQueue:
     def __init__(self, name):
         self.valid = True 
-        self.queue = Queue.queue()
+        self.queue = queue.Queue()
         self.name = name
 
     def Put(self, msg):
@@ -42,18 +48,19 @@ class TransferServiceImpl(homo_lr_pb2_grpc.TransferService):
     
     def Init(self, request, context):
         key = request.key
-        if self.queue_map.has_key(key):
+        if key in self.queue_map:
             logging.warn(f"Another queue has the same key ${key}, duplicate key error.")  
             return TransferResponse(is_ok = False, errmsg = "Duplicate key error.")
 
         self.queue_map[key] = NamedQueue(key)
+        logging.info(f"Init queue for key {key}.")
         return TransferResponse(is_ok = True)
 
     
     def Fini(self, request, context):
         key = request.key
-        if not self.queue_map.has_key(key):
-            logging.warn(f"No such queue has key ${key}, not found error.")
+        if not key in self.queue_map:
+            logging.warn(f"No such queue has key {key}, not found error.")
             return TransferResponse(is_ok = False, errmsg = "Not found error.")
 
         queue = self.queue_map[key]
@@ -61,9 +68,22 @@ class TransferServiceImpl(homo_lr_pb2_grpc.TransferService):
         del self.queue_map[key]
 
 
+    def Transfer(self, request, context):
+        key = request.key
+        if not key in self.queue_map:
+            logging.warn(f"No such queue has key {key}, not found error.")
+            return TransferResponse(is_ok = False, errmsg = "Not found error.")
+
+        queue = self.queue_map[key]
+        queue.Put(request.msg)
+
+        response = TransferResponse(is_ok = True)
+        return response
+
+
     def GetQueue(self, key):
-        if not self.queue_map.has_key(key):
-            logging.warn(f"The queue that kas key ${key} is not inited.")
+        if not key in self.queue_map:
+            logging.warn(f"The queue that kas key {key} is not inited.")
             return None
 
         return self.queue_map[key]
@@ -76,7 +96,7 @@ class TransferChannel:
         self.peer = peer
 
         channel = grpc.insecure_channel(self.peer)
-        client = TransferServiceStub()
+        client = TransferServiceStub(channel)
         request = TransferRequest(key = self.key)
         response = client.Init(request)
         if response.is_ok is False:
@@ -86,12 +106,12 @@ class TransferChannel:
 
     def __del__(self):
         channel = grpc.insecure_channel(self.peer)
-        client = TransferServiceStub()
+        client = TransferServiceStub(channel)
         request = TransferRequest(key = self.key)
         client.Fini(request)
 
 
-    def Recv(self, retry, timeout):
+    def Recv(self, retry = 10, timeout = 5):
         count = 0
         item = None
         while count < retry:
@@ -110,22 +130,44 @@ class TransferChannel:
             break
         
         if item is None:
-            logging.warn("Receive msg with key ${self.key} failed, timeout.")
+            logging.warn("Receive msg with key {self.key} failed, timeout.")
             return None
 
         return item
 
     def Send(self, msg):
         channel = grpc.insecure_channel(self.peer)
-        client = TransferServiceStub()
+        stub = TransferServiceStub(channel)
 
         request = TransferRequest()
         request.msg = msg
-        request.key = self.key()
+        request.key = self.key
 
-        response = client.Send(request)
+        response = stub.Transfer(request)
         if not response.is_ok:
-            logging.error(f"Send msg to ${self.peer} failed, errmsg ${response.errmsg}.")
+            logging.error(f"Send msg to {self.peer} failed, errmsg {response.errmsg}.")
             return False
         
         return True
+
+
+def run_server():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    service = TransferServiceImpl()
+    homo_lr_pb2_grpc.add_TransferServiceServicer_to_server(service, server)
+
+    server.add_insecure_port('[::]:50051')
+    server.start()
+    server.wait_for_termination()
+
+
+if __name__ == '__main__':
+    server_thread = Thread(target = run_server)
+    server_thread.start()
+
+    time.sleep(2)
+
+    channel = TransferChannel("test", "localhost:50051")
+    msg = "test".encode("utf-8")
+    channel.Send(msg)
+    print(channel.Recv())

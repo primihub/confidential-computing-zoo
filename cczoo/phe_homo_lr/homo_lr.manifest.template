@@ -79,6 +79,7 @@ sgx.trusted_files = [
   "file:homo_lr_worker.py",
   "file:homo_lr_pb2.py",
   "file:homo_lr_pb2_grpc.py",
+  "file:homo_lr_common.py",
   "file:breast_homo_test.csv",
   "file:breast_homo_guest.csv",
   "file:breast_homo_host.csv",

@@ -21,39 +21,39 @@ option objc_class_prefix = "HL";
 
 package homolr;
 
-service Host {
-  rpc GetPubKey (KeyRequest) returns (KeyReply) {}
-  rpc AggregateModel (WeightsRequest) returns (WeightsReply) {}
-  rpc Validate (Empty) returns (ValidateReply) {}
-  rpc Finish (Empty) returns (Empty) {}
-}
-
-message KeyRequest {
-  int32 id = 1;
-}
-
-message KeyReply {
-  bytes key = 1;
-}
-
-message WeightsRequest {
-  int32 id = 1;
-  int32 iter_n = 2;
-  bytes weights = 3;
-}
-
-message WeightsReply {
-  bytes updated_weights = 1;
-}
-
-message ValidateReply {
-  float acc = 1;
-  float loss = 2;
-}
-
-message Empty {
-
-}
+// service Host {
+//   rpc GetPubKey (KeyRequest) returns (KeyReply) {}
+//   rpc AggregateModel (WeightsRequest) returns (WeightsReply) {}
+//   rpc Validate (Empty) returns (ValidateReply) {}
+//   rpc Finish (Empty) returns (Empty) {}
+// }
+//
+// message KeyRequest {
+//   int32 id = 1;
+// }
+//
+// message KeyReply {
+//   bytes key = 1;
+// }
+//
+// message WeightsRequest {
+//   int32 id = 1;
+//   int32 iter_n = 2;
+//   bytes weights = 3;
+// }
+//
+// message WeightsReply {
+//   bytes updated_weights = 1;
+// }
+//
+// message ValidateReply {
+//   float acc = 1;
+//   float loss = 2;
+// }
+//
+// message Empty {
+//
+// }
 
 message TransferRequest {
   bytes msg = 1;
@@ -67,6 +67,6 @@ message TransferResponse {
 
 service TransferService {
   rpc Init(TransferRequest) returns (TransferResponse) {}
-  rpc Send(TransferRequest) returns (TransferResponse) {}
+  rpc Transfer(TransferRequest) returns (TransferResponse) {}
   rpc Fini(TransferRequest) returns (TransferResponse) {}
 }
