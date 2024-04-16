@@ -75,7 +75,7 @@ RUN git clone https://github.com/intel/SGXDataCenterAttestationPrimitives.git ${
     && git checkout DCAP_1.11
 
 # Build Gramine
-RUN cd ${GRAMINEDIR} && pwd && meson setup build/ --buildtype=debug -Dsgx=enabled -Ddcap=enabled -Dsgx_driver="dcap1.10" -Dsgx_driver_include_path="/homo_lr/gramine/driver/driver/linux/include" \
+RUN cd ${GRAMINEDIR} && pwd && meson setup build/ --buildtype=debug -Ddirect=enabled -Dsgx=enabled -Ddcap=enabled -Dsgx_driver="dcap1.10" -Dsgx_driver_include_path="/homo_lr/gramine/driver/driver/linux/include" \
     && ninja -C build/ \
     && ninja -C build/ install
 
