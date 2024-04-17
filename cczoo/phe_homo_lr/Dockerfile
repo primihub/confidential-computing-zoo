@@ -99,10 +99,7 @@ RUN wget http://cmake.org/files/v3.22/cmake-3.22.0.tar.gz \
 
 WORKDIR $HOMO_LR_DIR
 
-COPY *.csv homo_lr_ps.py homo_lr_worker.py homo_lr.proto \
-    Makefile homo_lr.manifest.template \
-    issue_attestation.py \
-    hetero_attestation.proto 0001-disable-openmp.patch ./
+COPY 0001-disable-openmp.patch ./
 COPY sgx_default_qcnl.conf /etc/sgx_default_qcnl.conf
 
 # IPCL Python Wrapper
@@ -111,13 +108,6 @@ RUN git clone -b v1.1.3 https://github.com/intel/pailliercryptolib_python.git $I
     && patch -p1 < ../0001-disable-openmp.patch \
     && python3 setup.py install \
     && cd -
-
-# Generate Grpc proto file
-RUN python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. homo_lr.proto
-RUN python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. hetero_attestation.proto
-
-# Build gramine sgx manifest
-RUN make SGX=1 -j
 
 # Clean apt cache
 RUN apt-get clean all
